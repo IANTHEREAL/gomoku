@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"gomoku/internal/game"
-	"gomoku/internal/storage"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -70,43 +69,27 @@ func IsConfigured() bool {
 
 // AnalyzeGamePosition performs strategic analysis of the current game position with caching
 func (bp *BedrockProvider) AnalyzeGamePosition(gs *game.GameState) (string, error) {
-	// Load analysis cache
-	cache, err := storage.LoadAnalysisCache()
-	if err != nil {
-		return "", fmt.Errorf("failed to load analysis cache: %w", err)
+	// Check if cached analysis is valid for current board state
+	if gs.Analysis != "" && gs.AnalysisHash == gs.CurrentBoardHash {
+		return fmt.Sprintf("[CACHED ANALYSIS]\n%s", gs.Analysis), nil
 	}
 
-	// Check if we have cached analysis for this position
-	if cachedResult, found := cache.GetCachedAnalysis(gs); found {
-		return fmt.Sprintf("[CACHED ANALYSIS]\n%s", cachedResult), nil
-	}
-
-	// No cache hit, perform fresh analysis
-	// Create board representation for analysis
+	// Cache miss or invalid, generate fresh analysis
 	boardStr := formatBoardForAnalysis(gs)
-	
-	// Create analysis prompt
 	prompt := createAnalysisPrompt(gs, boardStr)
 	
-	// System prompt for strategic analysis
 	systemPrompt := `You are a professional Gomoku (Five in a Row) game analyst and commentator. 
 Provide strategic insights like a sports commentator, analyzing the current position, player advantages/disadvantages, 
 and tactical opportunities. Be clear, engaging, and educational in your analysis.`
 
-	// Generate fresh analysis using the same pattern as the reference implementation
 	analysis, err := bp.Generate(prompt, &systemPrompt)
 	if err != nil {
 		return "", err
 	}
 
 	// Cache the analysis result
-	cache.CacheAnalysis(gs, analysis)
-	
-	// Save updated cache
-	if saveErr := storage.SaveAnalysisCache(cache); saveErr != nil {
-		// Log error but don't fail the analysis
-		fmt.Printf("Warning: failed to save analysis cache: %v\n", saveErr)
-	}
+	gs.Analysis = analysis
+	gs.AnalysisHash = gs.CurrentBoardHash
 
 	return analysis, nil
 }

@@ -106,6 +106,11 @@ func (gs *GameState) MakeMove(moveStr string) error {
 	// Switch turn
 	gs.CurrentTurn = NextPlayer(gs.CurrentTurn)
 	
+	// Update current board hash and clear cached analysis
+	gs.CurrentBoardHash = gs.GenerateBoardHash()
+	gs.Analysis = ""
+	gs.AnalysisHash = ""
+	
 	return nil
 }
 

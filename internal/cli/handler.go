@@ -115,6 +115,14 @@ func (h *Handler) handleStatus() error {
 	fmt.Println("\nCurrent Board:")
 	fmt.Println(gs.String())
 
+	// Show AI analysis if available
+	if gs.Analysis != "" {
+		fmt.Println("\nAI Analysis:")
+		fmt.Println(strings.Repeat("-", 40))
+		fmt.Println(gs.Analysis)
+		fmt.Println(strings.Repeat("-", 40))
+	}
+
 	return nil
 }
 
@@ -166,6 +174,12 @@ func (h *Handler) handleAnalyze() error {
 	analysisResult, err := h.analyzer.AnalyzeGamePosition(gs)
 	if err != nil {
 		return fmt.Errorf("failed to analyze position: %w", err)
+	}
+
+	// Save game state with updated analysis cache
+	err = storage.SaveGameState(gs)
+	if err != nil {
+		return fmt.Errorf("failed to save game state: %w", err)
 	}
 
 	fmt.Println(analysisResult)

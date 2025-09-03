@@ -1,6 +1,7 @@
 package game
 
 import (
+	"crypto/md5"
 	"fmt"
 	"strings"
 )
@@ -27,11 +28,14 @@ type Move struct {
 }
 
 type GameState struct {
-	Board       [BoardSize][BoardSize]rune `json:"board"`
-	Moves       []Move                     `json:"moves"`
-	CurrentTurn Player                     `json:"current_turn"`
-	Winner      *Player                    `json:"winner"`
-	GameOver    bool                       `json:"game_over"`
+	Board            [BoardSize][BoardSize]rune `json:"board"`
+	Moves            []Move                     `json:"moves"`
+	CurrentTurn      Player                     `json:"current_turn"`
+	Winner           *Player                    `json:"winner"`
+	GameOver         bool                       `json:"game_over"`
+	Analysis         string                     `json:"analysis,omitempty"`
+	AnalysisHash     string                     `json:"analysis_hash,omitempty"`
+	CurrentBoardHash string                     `json:"current_board_hash,omitempty"`
 }
 
 func NewGameState() *GameState {
@@ -157,4 +161,16 @@ func (gs *GameState) String() string {
 	}
 	
 	return sb.String()
+}
+
+// GenerateBoardHash generates a hash for the current board state
+func (gs *GameState) GenerateBoardHash() string {
+	boardData := ""
+	for i := 0; i < BoardSize; i++ {
+		for j := 0; j < BoardSize; j++ {
+			boardData += string(gs.Board[i][j])
+		}
+	}
+	hash := md5.Sum([]byte(boardData))
+	return fmt.Sprintf("%x", hash)
 }
