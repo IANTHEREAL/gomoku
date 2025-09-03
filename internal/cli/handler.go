@@ -63,7 +63,18 @@ func (h *Handler) handleMove(moveStr string) error {
 	// Make the move
 	err = gs.MakeMove(moveStr)
 	if err != nil {
-		return fmt.Errorf("invalid move: %w", err)
+		// Enhanced error message with format explanation
+		errorMsg := fmt.Sprintf("invalid move: %v\n\n", err)
+		errorMsg += "Correct format: <Column>-<Row>-<Piece>\n"
+		errorMsg += "Examples:\n"
+		errorMsg += "  H-08-X  (Black stone at center)\n"
+		errorMsg += "  A-01-O  (White stone at top-left)\n"
+		errorMsg += "  O-15-X  (Black stone at bottom-right)\n\n"
+		errorMsg += "Rules:\n"
+		errorMsg += "  Columns: A-O (A=left, O=right)\n"
+		errorMsg += "  Rows: 01-15 (01=top, 15=bottom)\n"
+		errorMsg += "  Pieces: X=Black, O=White"
+		return fmt.Errorf("%s", errorMsg)
 	}
 
 	// Save updated game state
@@ -86,7 +97,7 @@ func (h *Handler) handleMove(moveStr string) error {
 	return nil
 }
 
-// handleStatus shows current game status
+// handleStatus shows current game status with ASCII board
 func (h *Handler) handleStatus() error {
 	gs, err := storage.LoadGameState()
 	if err != nil {
@@ -100,6 +111,9 @@ func (h *Handler) handleStatus() error {
 		lastMove := gs.Moves[len(gs.Moves)-1]
 		fmt.Printf("Last Move: %d. %s-%c (%s)\n", lastMove.MoveNum, lastMove.Position, lastMove.Piece, lastMove.Player)
 	}
+
+	fmt.Println("\nCurrent Board:")
+	fmt.Println(gs.String())
 
 	return nil
 }
