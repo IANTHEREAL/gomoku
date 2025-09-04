@@ -52,19 +52,8 @@ func getAWSRegion() string {
 
 // IsConfigured checks if AWS credentials are properly configured
 func IsConfigured() bool {
-	// Prefer AWS_BEARER_TOKEN_BEDROCK (recommended approach)
-	if os.Getenv("AWS_BEARER_TOKEN_BEDROCK") != "" {
-		return true
-	}
-	
-	// Fallback to traditional AWS credentials
-	requiredVars := []string{"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"}
-	for _, v := range requiredVars {
-		if os.Getenv(v) == "" {
-			return false
-		}
-	}
-	return true
+	// Only use AWS_BEARER_TOKEN_BEDROCK
+	return os.Getenv("AWS_BEARER_TOKEN_BEDROCK") != ""
 }
 
 // AnalyzeGamePosition performs strategic analysis of the current game position with caching
