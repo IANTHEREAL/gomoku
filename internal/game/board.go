@@ -163,14 +163,24 @@ func (gs *GameState) String() string {
 	return sb.String()
 }
 
-// GenerateBoardHash generates a hash for the current board state
+// GenerateBoardHash generates a hash for the current board state including move history
 func (gs *GameState) GenerateBoardHash() string {
+	// Include current board state
 	boardData := ""
 	for i := 0; i < BoardSize; i++ {
 		for j := 0; j < BoardSize; j++ {
 			boardData += string(gs.Board[i][j])
 		}
 	}
-	hash := md5.Sum([]byte(boardData))
+	
+	// Include move history - different paths to same board state will have different hashes
+	moveHistory := ""
+	for _, move := range gs.Moves {
+		moveHistory += fmt.Sprintf("%s-%s-%c|", move.Position, move.Player, move.Piece)
+	}
+	
+	// Combine board state and move history
+	combinedData := boardData + "|HISTORY|" + moveHistory
+	hash := md5.Sum([]byte(combinedData))
 	return fmt.Sprintf("%x", hash)
 }
