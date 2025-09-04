@@ -47,6 +47,9 @@ func (h *Handler) HandleCommand(args []string) error {
 	case "analyze":
 		return h.handleAnalyze()
 
+	case "visualize":
+		return h.handleVisualize()
+
 	default:
 		return fmt.Errorf("unknown command: %s", command)
 	}
@@ -188,6 +191,29 @@ func (h *Handler) handleAnalyze() error {
 	return nil
 }
 
+// handleVisualize generates a PNG visualization of the current board state
+func (h *Handler) handleVisualize() error {
+	gs, err := storage.LoadGameState()
+	if err != nil {
+		return fmt.Errorf("failed to load game state: %w", err)
+	}
+
+	// Generate board image
+	err = visual.GenerateBoardImage(gs)
+	if err != nil {
+		return fmt.Errorf("failed to generate board visualization: %w", err)
+	}
+
+	fmt.Printf("Board visualization generated: %s\n", visual.OutputFile)
+	fmt.Printf("Game Status: %s\n", gs.GetGameStatus())
+	if len(gs.Moves) > 0 {
+		lastMove := gs.Moves[len(gs.Moves)-1]
+		fmt.Printf("Last Move: %d. %s-%c (%s)\n", lastMove.MoveNum, lastMove.Position, lastMove.Piece, lastMove.Player)
+	}
+
+	return nil
+}
+
 // showUsage displays usage information
 func (h *Handler) showUsage() error {
 	fmt.Println("Gomoku Game Simulator")
@@ -197,6 +223,7 @@ func (h *Handler) showUsage() error {
 	fmt.Println("  gomoku status            Show current game status and turn")
 	fmt.Println("  gomoku history           Show complete move history")
 	fmt.Println("  gomoku analyze           AI strategic analysis (requires AWS credentials)")
+	fmt.Println("  gomoku visualize         Generate PNG board visualization")
 	fmt.Println("")
 	fmt.Println("Move Format:")
 	fmt.Println("  <Column>-<Row>-<Piece>")

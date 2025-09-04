@@ -10,10 +10,10 @@ import (
 const (
 	CellSize   = 40
 	BoardSize  = 15
-	Margin     = 60
+	Margin     = 18  // Balanced padding for coordinate visibility
 	OutputFile = "gomoku.png"
-	MinPadding = 2  // Minimum padding around occupied area
-	MaxPadding = 4  // Maximum padding around occupied area
+	MinPadding = 1  // Minimum padding around occupied area
+	MaxPadding = 1  // Maximum padding around occupied area
 )
 
 // DisplayArea represents the area of the board to display
@@ -63,15 +63,6 @@ func calculateOptimalDisplayArea(gs *game.GameState) DisplayArea {
 	
 	// Add padding around occupied area
 	padding := MinPadding
-	occupiedWidth := maxCol - minCol + 1
-	occupiedHeight := maxRow - minRow + 1
-	
-	// Use more padding for smaller occupied areas
-	if occupiedWidth <= 3 && occupiedHeight <= 3 {
-		padding = MaxPadding
-	} else if occupiedWidth <= 5 && occupiedHeight <= 5 {
-		padding = MinPadding + 1
-	}
 	
 	// Calculate display bounds with padding
 	displayMinRow := max(0, minRow-padding)
@@ -112,7 +103,7 @@ func GenerateBoardImage(gs *game.GameState) error {
 	
 	// Calculate image dimensions based on display area
 	imgWidth := displayArea.Width*CellSize + 2*Margin
-	imgHeight := displayArea.Height*CellSize + 2*Margin + 100 // Extra space for move history
+	imgHeight := displayArea.Height*CellSize + 2*Margin + 25 // Compact space for move history
 
 	// Create drawing context
 	dc := gg.NewContext(imgWidth, imgHeight)
@@ -140,7 +131,7 @@ func GenerateBoardImage(gs *game.GameState) error {
 // drawGrid draws the board grid lines
 func drawGrid(dc *gg.Context, displayArea DisplayArea) {
 	dc.SetRGB(0, 0, 0) // Black lines
-	dc.SetLineWidth(1)
+	dc.SetLineWidth(0.5)
 
 	// Vertical lines
 	for i := 0; i < displayArea.Width; i++ {
@@ -166,7 +157,7 @@ func drawCoordinateLabels(dc *gg.Context, displayArea DisplayArea) {
 	dc.SetRGB(0, 0, 0) // Black text
 	
 	// Load font (try system font, fallback to default)
-	if err := dc.LoadFontFace("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", 16); err != nil {
+	if err := dc.LoadFontFace("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", 12); err != nil {
 		// Fallback - no font loading, text will use default
 	}
 
@@ -174,7 +165,7 @@ func drawCoordinateLabels(dc *gg.Context, displayArea DisplayArea) {
 	for i := 0; i < displayArea.Width; i++ {
 		actualCol := displayArea.MinCol + i
 		x := float64(Margin + i*CellSize + CellSize/2)
-		y := float64(Margin - 10)
+		y := float64(Margin - 8)  // Closer to board
 		label := string(rune('A' + actualCol))
 		dc.DrawStringAnchored(label, x, y, 0.5, 0.5)
 	}
@@ -182,7 +173,7 @@ func drawCoordinateLabels(dc *gg.Context, displayArea DisplayArea) {
 	// Row labels (01-15) - only for displayed rows
 	for i := 0; i < displayArea.Height; i++ {
 		actualRow := displayArea.MinRow + i
-		x := float64(Margin - 20)
+		x := float64(Margin - 8)   // Adjusted for smaller margin
 		y := float64(Margin + i*CellSize + CellSize/2)
 		label := fmt.Sprintf("%02d", actualRow+1)
 		dc.DrawStringAnchored(label, x, y, 0.5, 0.5)
@@ -263,32 +254,43 @@ func drawStones(dc *gg.Context, gs *game.GameState, displayArea DisplayArea) {
 	}
 }
 
-// drawMoveHistory draws the move history at the bottom of the image
+// drawMoveHistory draws the move history at the bottom in a compact single line
 func drawMoveHistory(dc *gg.Context, gs *game.GameState, displayArea DisplayArea) {
 	dc.SetRGB(0, 0, 0) // Black text
 	
-	yOffset := float64(Margin + displayArea.Height*CellSize + 20)
+	yOffset := float64(Margin + displayArea.Height*CellSize + 10)
 	
-	// Title
-	dc.DrawStringAnchored("Move History:", float64(Margin), yOffset, 0, 0.5)
-	yOffset += 25
-
-	// Recent moves (show last 5 moves to avoid overcrowding)
+	// Load smaller font for moves
+	if err := dc.LoadFontFace("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", 10); err != nil {
+		// Fallback - no font loading, text will use default
+	}
+	
+	// Show recent moves in single line (last 3 moves)
 	startIdx := 0
-	if len(gs.Moves) > 5 {
-		startIdx = len(gs.Moves) - 5
+	if len(gs.Moves) > 3 {
+		startIdx = len(gs.Moves) - 3
+	}
+	
+	movesToShow := gs.Moves[startIdx:]
+	if len(movesToShow) > 0 {
+		// Build move history string with new format
+		moveStrs := make([]string, len(movesToShow))
+		for i, move := range movesToShow {
+			moveStrs[i] = fmt.Sprintf("step(%s-%c)", move.Position, move.Piece)
+		}
+		
+		moveHistory := moveStrs[0]
+		for i := 1; i < len(moveStrs); i++ {
+			moveHistory += " -> " + moveStrs[i]
+		}
+		// Remove ultrathink suffix
+		
+		dc.DrawStringAnchored(moveHistory, float64(Margin), yOffset, 0, 0.5)
+		yOffset += 15
 	}
 
-	for i := startIdx; i < len(gs.Moves); i++ {
-		move := gs.Moves[i]
-		moveText := fmt.Sprintf("%d. %s-%c (%s)", move.MoveNum, move.Position, move.Piece, move.Player)
-		dc.DrawStringAnchored(moveText, float64(Margin), yOffset, 0, 0.5)
-		yOffset += 20
-	}
-
-	// Game status
+	// Game status in same line if space allows, otherwise next line
 	if gs.GameOver {
-		yOffset += 10
 		status := gs.GetGameStatus()
 		dc.SetRGB(0.8, 0, 0) // Red text for game over
 		dc.DrawStringAnchored(status, float64(Margin), yOffset, 0, 0.5)
