@@ -12,8 +12,8 @@ const (
 	BoardSize  = 15
 	Margin     = 18  // Balanced padding for coordinate visibility
 	OutputFile = "gomoku.png"
-	MinPadding = 1  // Minimum padding around occupied area
-	MaxPadding = 1  // Maximum padding around occupied area
+	MinPadding = 3  // Minimum padding around occupied area
+	MaxPadding = 3  // Maximum padding around occupied area
 )
 
 // DisplayArea represents the area of the board to display
