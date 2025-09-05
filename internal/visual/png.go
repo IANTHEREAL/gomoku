@@ -69,12 +69,12 @@ func calculateOptimalDisplayArea(gs *game.GameState) DisplayArea {
 	occupiedWidth := maxCol - minCol + 1
 	occupiedHeight := maxRow - minRow + 1
 	
-	// Dynamic padding: if occupied area < 4x4, use 3 grid padding; otherwise use 1 grid padding
+	// Dynamic padding: < 3x3 use 2 circles, >= 3x3 use 1 circle
 	var padding int
-	if occupiedWidth < 4 && occupiedHeight < 4 {
-		padding = 3  // Use 3 circles of extra board for smaller areas
+	if occupiedWidth < 3 && occupiedHeight < 3 {
+		padding = 2  // Use 2 circles of extra board for areas < 3x3
 	} else {
-		padding = 1  // Use only 1 circle of extra board for areas >= 4x4
+		padding = 1  // Use 1 circle of extra board for areas >= 3x3
 	}
 	
 	// Find optimal square position using enumeration for perfect symmetry
